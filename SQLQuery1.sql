@@ -10,20 +10,20 @@ CREATE TABLE Posts(
 	LikeCount int,
 	IsDeleted bit
 )
-INSERT INTO Posts(Content,WhenShared,UserId,LikeCount,IsDeleted)
-	VALUES('AAAAAA','',1,25,0),
-	      ('BBBBBB','',2,40,0),
-		  ('CCCCCC','',3,57,0),
-		  ('DDDDDD','',4,80,0),
-		  ('EEEEEE','',5,32,0),
-		  ('FFFFFFF','',6,120,0),
-		  ('GGGGGGG','',7,96,0)
+INSERT INTO Posts(Content,UserId,LikeCount,IsDeleted)
+	VALUES('AAAAAA',1,25,0),
+	      ('BBBBBB',2,40,0),
+		  ('CCCCCC',3,57,0),
+		  ('DDDDDD',4,80,0),
+		  ('EEEEEE',5,32,0),
+		  ('FFFFFFF',6,120,0),
+		  ('GGGGGGG',7,96,0)
 
 CREATE TABLE Users(
 	Id int identity(1,1) PRIMARY KEY,
 	Login nvarchar(50),
 	Password nvarchar(50),
-	Mail nvarchar(50)
+	Mail nvarchar(50) UNIQUE
 )
 INSERT INTO Users(Login,Password,Mail)
 	VALUES('aysu_mva)','aysu1234','aaaa@aaa.aa'),
@@ -41,7 +41,7 @@ CREATE TABLE Comments(
 	LikeCount int,
 	IsDelete bit
 )
-SELECT * FROM Comments
+SELECT * FROM Posts
 
 INSERT INTO Comments(UserId,PostId,LikeCount,IsDelete)
 	VALUES (1,1,10,0),
@@ -70,21 +70,48 @@ INSERT INTO People(Name,Surname,Age)
 		  
 
 ---Query1
-SELECT Posts.Id, COUNT (Comments.PostId) FROM Comments
-JOIN Comments
-ON Comments.PostId = Posts.Id
+SELECT COUNT (*) FROM Comments
 JOIN Posts
 ON Comments.PostId = Posts.Id
+GROUP BY Posts.Id
 
 
-SELECT Comments.PostId, COUNT(*) 
-FROM Comments 
-GROUP BY Comments.PostId
-
-
-CREATE VIEW GetFullPostInfo
+---Query2
+CREATE VIEW GetFullPostsInfo
 AS
-SELECT * FROM People
-SELECT * FROM Users
-SELECT * FROM Posts
-SELECT * FROM Comments
+SELECT People.Name,People.Surname,People.Age,Users.Login,Users.Password,Users.Mail,Posts.Content,Posts.WhenShared,Posts.LikeCount as 'PostLikeCount',Posts.IsDeleted,Comments.LikeCount as 'CommentsLikeCount',Comments.PostId,Comments.IsDelete
+FROM Comments
+JOIN People
+ON Comments.UserId=People.Id
+JOIN Users
+ON Comments.UserId=Users.Id
+JOIN Posts
+ON Comments.PostId=Posts.Id
+
+SELECT * FROM GetFullPostsInfo
+---Query3
+
+ALTER TRIGGER DeletePosts
+ON Posts
+INSTEAD OF DELETE
+AS
+	DECLARE @Id int
+	SELECT @Id =Id FROM deleted
+	UPDATE Posts SET IsDeleted = 1 WHERE Id = @Id
+
+	DELETE Posts WHERE Id = 2
+
+	SELECT * FROM Posts
+
+
+ALTER TRIGGER DeleteComments
+ON Comments
+INSTEAD OF DELETE
+AS
+	DECLARE @Id int
+	SELECT @Id = Id FROM deleted
+	UPDATE Comments SET IsDelete = 1 WHERE Id = @Id
+
+	DELETE Comments WHERE Id = 2
+
+	SELECT * FROM Comments
